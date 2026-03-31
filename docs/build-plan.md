@@ -10,7 +10,7 @@ Build a home-use meal planning and shopping application in JavaScript with:
 - Shopping list generation with pantry-aware exclusions
 - Future export of a shopping list to supermarket carts
 
-The system will be run locally from home, but should lean on AWS-managed services where they are a clear fit.
+The system will be run locally from home. Cloud services are optional future enhancements, not a deployment requirement.
 
 ## 2. Guiding Principles
 
@@ -51,7 +51,7 @@ This keeps deployment simple for home use while preserving service boundaries in
 
 ### Database
 
-- Primary recommendation: `Aurora PostgreSQL`
+- Primary recommendation: local `PostgreSQL`
 - Access via `Prisma` or `Knex`
 - Why PostgreSQL:
   - Good support for relational recipe data
@@ -60,7 +60,8 @@ This keeps deployment simple for home use while preserving service boundaries in
 
 ### File and asset storage
 
-- `S3` for recipe images and imported source snapshots
+- Local filesystem storage first
+- Optional future migration to object storage if the app grows
 
 ### Authentication
 
@@ -69,19 +70,15 @@ This keeps deployment simple for home use while preserving service boundaries in
 
 ### Hosting model
 
-Two viable options:
+Recommended model:
 
-1. Local UI + local API, cloud AWS data services
-   - Best fit if you want AWS-native persistence
-   - UI and API run on a home machine or mini PC
-   - Aurora and S3 are hosted in AWS
+- Local UI and local API on a home machine
+- Local PostgreSQL, ideally in Docker for repeatability
+- Local image/file storage
 
-2. Fully local stack for early development, AWS-ready interfaces
-   - Faster and cheaper initially
-   - PostgreSQL runs locally in Docker
-   - Later swap to Aurora with minimal application changes
+Optional future model:
 
-Because the app is for home use only, option 2 is the better starting point even if the target production database shape mirrors Aurora PostgreSQL.
+- Keep the application local but move persistence to managed cloud services if that later becomes useful
 
 ## 4. Suggested Repository Structure
 
@@ -110,7 +107,7 @@ Notes:
 - `apps/api`: Node API
 - `packages/domain`: planning logic, unit conversion, normalisation
 - `packages/db`: schema, migrations, seed data, repositories
-- `infra/aws`: CDK or Terraform for Aurora/S3 if you choose AWS-hosted persistence
+- `infra/`: optional future infrastructure automation if external services are introduced
 
 ## 5. Domain Boundaries
 
@@ -610,8 +607,8 @@ Exit criteria:
 - Backend: `Node.js`, `Fastify`
 - ORM: `Prisma`
 - Validation: `Zod`
-- Database: local `PostgreSQL`, later Aurora PostgreSQL if needed
-- Infra as code: `AWS CDK` in JavaScript
+- Database: local `PostgreSQL`
+- Infra as code: defer until there is an actual infrastructure need
 - Testing: `Vitest`, `Playwright`
 
 ### Why this stack

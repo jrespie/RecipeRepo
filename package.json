@@ -1,0 +1,20 @@
+{
+  "name": "recipe-repo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local-first meal planning and shopping list app for home use.",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace @recipe-repo/web",
+    "dev:api": "npm run dev --workspace @recipe-repo/api",
+    "build": "npm run build --workspaces",
+    "lint": "npm run lint --workspaces",
+    "test": "npm run test --workspaces"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
