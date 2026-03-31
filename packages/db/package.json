@@ -12,6 +12,7 @@
     "lint": "node -e \"console.log('db lint placeholder')\"",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:seed": "node src/seed.js",
     "test": "node --test"
   },
   "dependencies": {

@@ -3,26 +3,12 @@ export const dbStatus = {
   status: "prisma-configured"
 };
 
-export const recipeIncludes = {
-  ingredients: {
-    include: {
-      ingredient: true
-    },
-    orderBy: {
-      sortOrder: "asc"
-    }
-  },
-  steps: {
-    orderBy: {
-      stepNumber: "asc"
-    }
-  },
-  tags: {
-    include: {
-      tag: true
-    }
-  },
-  source: true
-};
-
 export { recipeSchemaOverview } from "./schema-overview.js";
+export { recipeIncludes } from "./recipe-includes.js";
+export { prisma } from "./client.js";
+export {
+  createRecipe,
+  getRecipeById,
+  listRecipes,
+  updateRecipe
+} from "./recipes.js";
