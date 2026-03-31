@@ -12,6 +12,8 @@ const server = Fastify({
   logger: true
 });
 
+const apiPort = Number(process.env.API_PORT || 4000);
+
 server.setErrorHandler((error, _request, reply) => {
   const statusCode = error.statusCode && error.statusCode >= 400
     ? error.statusCode
@@ -72,7 +74,7 @@ server.put("/api/recipes/:id", async (request, reply) => {
 const start = async () => {
   try {
     await server.listen({
-      port: appConfig.apiPort,
+      port: apiPort,
       host: "0.0.0.0"
     });
   } catch (error) {
