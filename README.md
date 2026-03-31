@@ -43,6 +43,8 @@ Typical setup flow:
 4. `npm run db:generate`
 5. `npm run db:migrate`
 
+The local project database is exposed on host port `5433` to avoid colliding with any PostgreSQL service you may already have on `5432`.
+
 ## Next Steps
 
 1. Install dependencies with `npm install`.

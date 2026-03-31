@@ -19,6 +19,7 @@ The application is local-first.
 
 - `apps/web`: Vite development server
 - `apps/api`: Node API on port `4000`
+- local PostgreSQL on host port `5433`
 - `packages/domain`: shared business logic
 - `packages/db`: database schema and persistence layer
 
