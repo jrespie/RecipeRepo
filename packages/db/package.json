@@ -10,6 +10,14 @@
   "scripts": {
     "build": "node -e \"console.log('db build placeholder')\"",
     "lint": "node -e \"console.log('db lint placeholder')\"",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
     "test": "node --test"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.6.0"
+  },
+  "devDependencies": {
+    "prisma": "^6.6.0"
   }
 }

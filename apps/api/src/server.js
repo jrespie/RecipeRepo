@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import { appConfig } from "@recipe-repo/shared";
 import { listRecipeSummaries } from "@recipe-repo/domain";
+import { dbStatus } from "@recipe-repo/db";
 
 const server = Fastify({
   logger: true
@@ -9,7 +10,8 @@ const server = Fastify({
 server.get("/health", async () => {
   return {
     status: "ok",
-    app: appConfig.name
+    app: appConfig.name,
+    database: dbStatus
   };
 });
 

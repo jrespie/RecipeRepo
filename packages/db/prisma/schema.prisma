@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UnitKind {
+  g
+  kg
+  ml
+  l
+  each
+}
+
+enum ConversionStatus {
+  ok
+  review
+}
+
+model Recipe {
+  id               String             @id @default(cuid())
+  slug             String             @unique
+  title            String
+  description      String?
+  servings         Int
+  prepMinutes      Int?
+  cookMinutes      Int?
+  cuisine          String?
+  proteinType      String?
+  costBand         String?
+  freezerFriendly  Boolean            @default(false)
+  kidFriendly      Boolean            @default(false)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  ingredients      RecipeIngredient[]
+  steps            RecipeStep[]
+  tags             RecipeTagJoin[]
+  source           RecipeSource?
+}
+
+model Ingredient {
+  id               String             @id @default(cuid())
+  slug             String             @unique
+  name             String
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  recipeLinks      RecipeIngredient[]
+}
+
+model RecipeIngredient {
+  id                    String           @id @default(cuid())
+  recipeId              String
+  ingredientId          String?
+  sortOrder             Int
+  rawText               String
+  canonicalName         String?
+  quantity              Decimal?         @db.Decimal(10, 2)
+  unit                  UnitKind?
+  preparationNote       String?
+  optional              Boolean          @default(false)
+  conversionStatus      ConversionStatus @default(review)
+  conversionNotes       String?
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+  recipe                Recipe           @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  ingredient            Ingredient?      @relation(fields: [ingredientId], references: [id], onDelete: SetNull)
+
+  @@index([recipeId, sortOrder])
+}
+
+model RecipeStep {
+  id               String    @id @default(cuid())
+  recipeId         String
+  stepNumber       Int
+  instruction      String
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  recipe           Recipe    @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@unique([recipeId, stepNumber])
+}
+
+model RecipeTag {
+  id               String          @id @default(cuid())
+  slug             String          @unique
+  name             String          @unique
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  recipeLinks      RecipeTagJoin[]
+}
+
+model RecipeTagJoin {
+  recipeId         String
+  tagId            String
+  recipe           Recipe    @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  tag              RecipeTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([recipeId, tagId])
+}
+
+model RecipeSource {
+  id               String    @id @default(cuid())
+  recipeId         String    @unique
+  sourceType       String
+  sourceName       String?
+  sourceUrl        String?
+  attributionText  String?
+  originalText     String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  recipe           Recipe    @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+}

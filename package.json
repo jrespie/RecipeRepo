@@ -10,6 +10,11 @@
   "scripts": {
     "dev:web": "npm run dev --workspace @recipe-repo/web",
     "dev:api": "npm run dev --workspace @recipe-repo/api",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:logs": "docker compose logs -f postgres",
+    "db:generate": "npm run prisma:generate --workspace @recipe-repo/db",
+    "db:migrate": "npm run prisma:migrate --workspace @recipe-repo/db",
     "build": "npm run build --workspaces",
     "lint": "npm run lint --workspaces",
     "test": "npm run test --workspaces"
