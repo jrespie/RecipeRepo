@@ -8,6 +8,7 @@ export { recipeIncludes } from "./recipe-includes.js";
 export { prisma } from "./client.js";
 export {
   createRecipe,
+  deleteRecipe,
   getRecipeById,
   listRecipes,
   updateRecipe

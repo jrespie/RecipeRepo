@@ -3,6 +3,7 @@ import { appConfig } from "@recipe-repo/shared";
 import {
   createRecipe,
   dbStatus,
+  deleteRecipe,
   getRecipeById,
   listRecipes,
   updateRecipe
@@ -69,6 +70,23 @@ server.put("/api/recipes/:id", async (request, reply) => {
   }
 
   return updateRecipe(request.params.id, request.body);
+});
+
+server.delete("/api/recipes/:id", async (request, reply) => {
+  const existingRecipe = await getRecipeById(request.params.id);
+
+  if (!existingRecipe) {
+    reply.code(404);
+    return {
+      message: "Recipe not found"
+    };
+  }
+
+  await deleteRecipe(request.params.id);
+
+  return {
+    success: true
+  };
 });
 
 const start = async () => {

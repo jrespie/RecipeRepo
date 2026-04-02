@@ -396,3 +396,15 @@ export async function updateRecipe(id, recipeInput) {
 
   return mapRecipe(updatedRecipe);
 }
+
+export async function deleteRecipe(id) {
+  await prisma.recipe.delete({
+    where: {
+      id
+    }
+  });
+
+  return {
+    success: true
+  };
+}

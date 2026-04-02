@@ -10,9 +10,33 @@ function emptyIngredient() {
 
 function emptyForm() {
   return {
+    id: null,
     title: "",
     ingredients: [emptyIngredient()],
     method: ""
+  };
+}
+
+function formFromRecipe(recipe) {
+  return {
+    id: recipe.id,
+    title: recipe.title,
+    ingredients:
+      recipe.ingredients.length > 0
+        ? recipe.ingredients.map((ingredient) => {
+            const rawText = ingredient.rawText ?? "";
+            const canonicalName = ingredient.canonicalName ?? "";
+            const quantityPrefix = canonicalName
+              ? rawText.slice(0, Math.max(0, rawText.toLowerCase().indexOf(canonicalName.toLowerCase()))).trim()
+              : "";
+
+            return {
+              quantity: quantityPrefix,
+              name: canonicalName || rawText
+            };
+          })
+        : [emptyIngredient()],
+    method: recipe.steps.map((step) => step.instruction).join("\n")
   };
 }
 
@@ -135,6 +159,16 @@ export default function App() {
     setIsDialogOpen(true);
   }
 
+  function openEditDialog() {
+    if (!selectedRecipe) {
+      return;
+    }
+
+    setForm(formFromRecipe(selectedRecipe));
+    setError("");
+    setIsDialogOpen(true);
+  }
+
   function closeDialog() {
     setIsDialogOpen(false);
     setForm(emptyForm());
@@ -147,8 +181,8 @@ export default function App() {
     setError("");
 
     try {
-      const response = await fetch("/api/recipes", {
-        method: "POST",
+      const response = await fetch(form.id ? `/api/recipes/${form.id}` : "/api/recipes", {
+        method: form.id ? "PUT" : "POST",
         headers: {
           "Content-Type": "application/json"
         },
@@ -169,6 +203,37 @@ export default function App() {
       setError(nextError.message || "Unable to save recipe.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!selectedRecipe) {
+      return;
+    }
+
+    const confirmed = window.confirm(`Delete "${selectedRecipe.title}"?`);
+
+    if (!confirmed) {
+      return;
+    }
+
+    setError("");
+
+    try {
+      const response = await fetch(`/api/recipes/${selectedRecipe.id}`, {
+        method: "DELETE"
+      });
+
+      if (!response.ok) {
+        const failure = await response.json().catch(() => ({
+          message: "Unable to delete recipe."
+        }));
+        throw new Error(failure.message || "Unable to delete recipe.");
+      }
+
+      await loadRecipes();
+    } catch (nextError) {
+      setError(nextError.message || "Unable to delete recipe.");
     }
   }
 
@@ -214,6 +279,22 @@ export default function App() {
             <>
               <div className="panel-header">
                 <h2>{selectedRecipe.title}</h2>
+                <div className="action-row">
+                  <button
+                    className="secondary-button"
+                    onClick={openEditDialog}
+                    type="button"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    className="danger-button"
+                    onClick={handleDelete}
+                    type="button"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
 
               <div className="recipe-section">
@@ -252,7 +333,7 @@ export default function App() {
             aria-labelledby="add-recipe-title"
           >
             <div className="panel-header">
-              <h2 id="add-recipe-title">Add Recipe</h2>
+              <h2 id="add-recipe-title">{form.id ? "Edit Recipe" : "Add Recipe"}</h2>
               <button className="text-button" onClick={closeDialog} type="button">
                 Close
               </button>
@@ -327,7 +408,7 @@ export default function App() {
 
               <div className="dialog-actions">
                 <button className="primary-button" disabled={saving} type="submit">
-                  {saving ? "Saving…" : "Save Recipe"}
+                  {saving ? "Saving…" : form.id ? "Save Changes" : "Save Recipe"}
                 </button>
               </div>
             </form>

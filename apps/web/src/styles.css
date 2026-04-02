@@ -41,6 +41,11 @@ textarea {
   align-items: center;
 }
 
+.action-row {
+  display: flex;
+  gap: 8px;
+}
+
 .topbar {
   margin-bottom: 20px;
 }
@@ -124,6 +129,7 @@ h1 {
 
 .primary-button,
 .secondary-button,
+.danger-button,
 .text-button {
   border-radius: 10px;
   cursor: pointer;
@@ -139,6 +145,13 @@ h1 {
 .secondary-button {
   border: 1px solid var(--line);
   background: #fff;
+  padding: 8px 12px;
+}
+
+.danger-button {
+  border: 1px solid #c96a5e;
+  background: #fff2ef;
+  color: #8a2d21;
   padding: 8px 12px;
 }
 
@@ -223,7 +236,8 @@ textarea {
   .topbar,
   .panel-header,
   .ingredient-row,
-  .dialog-actions {
+  .dialog-actions,
+  .action-row {
     flex-direction: column;
     align-items: stretch;
   }
