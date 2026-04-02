@@ -14,7 +14,10 @@ function emptyForm() {
     id: null,
     title: "",
     ingredients: [emptyIngredient()],
-    method: ""
+    method: "",
+    sourceType: "manual",
+    sourceName: "Recipe UI",
+    originalText: ""
   };
 }
 
@@ -37,7 +40,10 @@ function formFromRecipe(recipe) {
             };
           })
         : [emptyIngredient()],
-    method: recipe.steps.map((step) => step.instruction).join("\n")
+    method: recipe.steps.map((step) => step.instruction).join("\n"),
+    sourceType: recipe.source?.sourceType ?? "manual",
+    sourceName: recipe.source?.sourceName ?? "Recipe UI",
+    originalText: recipe.source?.originalText ?? ""
   };
 }
 
@@ -75,8 +81,9 @@ function toPayload(form) {
     steps,
     tags: [],
     source: {
-      sourceType: "manual",
-      sourceName: "Recipe UI"
+      sourceType: form.sourceType || "manual",
+      sourceName: form.sourceName || "Recipe UI",
+      originalText: form.originalText || null
     }
   };
 }
@@ -205,7 +212,10 @@ export default function App() {
               name: ingredient.name
             }))
           : [emptyIngredient()],
-      method: parsed.method
+      method: parsed.method,
+      sourceType: "pasted-text",
+      sourceName: "Pasted text",
+      originalText: pasteText
     });
     setDialogMode("manual");
   }
