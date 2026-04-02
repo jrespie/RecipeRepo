@@ -17,6 +17,7 @@ function emptyForm() {
     method: "",
     sourceType: "manual",
     sourceName: "Recipe UI",
+    sourceUrl: "",
     originalText: ""
   };
 }
@@ -43,6 +44,7 @@ function formFromRecipe(recipe) {
     method: recipe.steps.map((step) => step.instruction).join("\n"),
     sourceType: recipe.source?.sourceType ?? "manual",
     sourceName: recipe.source?.sourceName ?? "Recipe UI",
+    sourceUrl: recipe.source?.sourceUrl ?? "",
     originalText: recipe.source?.originalText ?? ""
   };
 }
@@ -83,6 +85,7 @@ function toPayload(form) {
     source: {
       sourceType: form.sourceType || "manual",
       sourceName: form.sourceName || "Recipe UI",
+      sourceUrl: form.sourceUrl || null,
       originalText: form.originalText || null
     }
   };
@@ -95,8 +98,10 @@ export default function App() {
   const [dialogMode, setDialogMode] = useState("manual");
   const [form, setForm] = useState(emptyForm);
   const [pasteText, setPasteText] = useState("");
+  const [urlText, setUrlText] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [error, setError] = useState("");
 
   async function loadRecipes(preferredId = null) {
@@ -166,6 +171,7 @@ export default function App() {
   function openDialog() {
     setDialogMode("manual");
     setPasteText("");
+    setUrlText("");
     setForm(emptyForm());
     setError("");
     setIsDialogOpen(true);
@@ -174,6 +180,16 @@ export default function App() {
   function openPasteDialog() {
     setDialogMode("paste");
     setPasteText("");
+    setUrlText("");
+    setForm(emptyForm());
+    setError("");
+    setIsDialogOpen(true);
+  }
+
+  function openUrlDialog() {
+    setDialogMode("url");
+    setPasteText("");
+    setUrlText("");
     setForm(emptyForm());
     setError("");
     setIsDialogOpen(true);
@@ -186,6 +202,7 @@ export default function App() {
 
     setDialogMode("manual");
     setPasteText("");
+    setUrlText("");
     setForm(formFromRecipe(selectedRecipe));
     setError("");
     setIsDialogOpen(true);
@@ -195,6 +212,7 @@ export default function App() {
     setIsDialogOpen(false);
     setDialogMode("manual");
     setPasteText("");
+    setUrlText("");
     setForm(emptyForm());
     setError("");
   }
@@ -215,9 +233,58 @@ export default function App() {
       method: parsed.method,
       sourceType: "pasted-text",
       sourceName: "Pasted text",
+      sourceUrl: "",
       originalText: pasteText
     });
     setDialogMode("manual");
+  }
+
+  async function handleImportUrl() {
+    setImporting(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/recipes/import-url", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          url: urlText
+        })
+      });
+
+      if (!response.ok) {
+        const failure = await response.json().catch(() => ({
+          message: "Unable to import recipe URL."
+        }));
+        throw new Error(failure.message || "Unable to import recipe URL.");
+      }
+
+      const imported = await response.json();
+
+      setForm({
+        id: null,
+        title: imported.title || "",
+        ingredients:
+          imported.ingredients.length > 0
+            ? imported.ingredients.map((ingredient) => ({
+                quantity: ingredient.quantity,
+                name: ingredient.name
+              }))
+            : [emptyIngredient()],
+        method: imported.method || "",
+        sourceType: imported.sourceType || "url-import",
+        sourceName: imported.sourceName || "URL import",
+        sourceUrl: imported.sourceUrl || urlText,
+        originalText: imported.originalText || ""
+      });
+      setDialogMode("manual");
+    } catch (nextError) {
+      setError(nextError.message || "Unable to import recipe URL.");
+    } finally {
+      setImporting(false);
+    }
   }
 
   async function handleSubmit(event) {
@@ -294,6 +361,9 @@ export default function App() {
         </button>
         <button className="secondary-button" onClick={openPasteDialog} type="button">
           Add From Text
+        </button>
+        <button className="secondary-button" onClick={openUrlDialog} type="button">
+          Add From URL
         </button>
       </header>
 
@@ -403,6 +473,13 @@ export default function App() {
                 >
                   Paste Text
                 </button>
+                <button
+                  className={dialogMode === "url" ? "toggle-button active" : "toggle-button"}
+                  onClick={() => setDialogMode("url")}
+                  type="button"
+                >
+                  URL
+                </button>
               </div>
             ) : null}
 
@@ -434,6 +511,29 @@ Saute the onion.`}
                     type="button"
                   >
                     Parse Text
+                  </button>
+                </div>
+              </div>
+            ) : dialogMode === "url" && !form.id ? (
+              <div className="dialog-form">
+                <label>
+                  Recipe URL
+                  <input
+                    onChange={(event) => setUrlText(event.target.value)}
+                    placeholder="https://example.com/recipe"
+                    type="url"
+                    value={urlText}
+                  />
+                </label>
+
+                <div className="dialog-actions">
+                  <button
+                    className="primary-button"
+                    disabled={!urlText.trim() || importing}
+                    onClick={handleImportUrl}
+                    type="button"
+                  >
+                    {importing ? "Importing…" : "Import URL"}
                   </button>
                 </div>
               </div>

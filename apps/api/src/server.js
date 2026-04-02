@@ -1,5 +1,6 @@
 import Fastify from "fastify";
 import { appConfig } from "@recipe-repo/shared";
+import { importRecipeFromUrl } from "./importRecipeUrl.js";
 import {
   createRecipe,
   dbStatus,
@@ -57,6 +58,10 @@ server.post("/api/recipes", async (request, reply) => {
 
   reply.code(201);
   return recipe;
+});
+
+server.post("/api/recipes/import-url", async (request) => {
+  return importRecipeFromUrl(request.body.url);
 });
 
 server.put("/api/recipes/:id", async (request, reply) => {
