@@ -47,7 +47,7 @@ function toPayload(form) {
     description: null,
     servings: 4,
     ingredients,
-    steps: steps.length > 0 ? steps : [{ instruction: form.method.trim() || "Add method" }],
+    steps,
     tags: [],
     source: {
       sourceType: "manual",
@@ -225,14 +225,16 @@ export default function App() {
                 </ul>
               </div>
 
-              <div className="recipe-section">
-                <h3>Method</h3>
-                <ol className="method-list">
-                  {selectedRecipe.steps.map((step) => (
-                    <li key={step.id}>{step.instruction}</li>
-                  ))}
-                </ol>
-              </div>
+              {selectedRecipe.steps.length > 0 ? (
+                <div className="recipe-section">
+                  <h3>Method</h3>
+                  <ol className="method-list">
+                    {selectedRecipe.steps.map((step) => (
+                      <li key={step.id}>{step.instruction}</li>
+                    ))}
+                  </ol>
+                </div>
+              ) : null}
             </>
           ) : (
             <p>Select a recipe from the list.</p>
@@ -318,7 +320,6 @@ export default function App() {
                     }))
                   }
                   placeholder="Write the cooking method here. One step per line if you want separate steps."
-                  required
                   rows="8"
                   value={form.method}
                 />

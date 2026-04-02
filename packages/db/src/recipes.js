@@ -123,10 +123,6 @@ function validateRecipeInput(recipe) {
   if (normaliseIngredients(recipe.ingredients).length === 0) {
     throw new Error("At least one ingredient is required");
   }
-
-  if (normaliseSteps(recipe.steps).length === 0) {
-    throw new Error("At least one step is required");
-  }
 }
 
 function mapRecipe(recipe) {
