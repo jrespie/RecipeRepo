@@ -46,6 +46,12 @@ textarea {
   gap: 8px;
 }
 
+.dialog-toggle {
+  display: flex;
+  gap: 8px;
+  margin: 8px 0 16px;
+}
+
 .topbar {
   margin-bottom: 20px;
 }
@@ -130,7 +136,8 @@ h1 {
 .primary-button,
 .secondary-button,
 .danger-button,
-.text-button {
+.text-button,
+.toggle-button {
   border-radius: 10px;
   cursor: pointer;
 }
@@ -146,6 +153,17 @@ h1 {
   border: 1px solid var(--line);
   background: #fff;
   padding: 8px 12px;
+}
+
+.toggle-button {
+  border: 1px solid var(--line);
+  background: #fff;
+  padding: 8px 12px;
+}
+
+.toggle-button.active {
+  border-color: var(--accent);
+  background: #f2eee7;
 }
 
 .danger-button {
@@ -237,7 +255,8 @@ textarea {
   .panel-header,
   .ingredient-row,
   .dialog-actions,
-  .action-row {
+  .action-row,
+  .dialog-toggle {
     flex-direction: column;
     align-items: stretch;
   }

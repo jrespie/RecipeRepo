@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { parseRecipeText } from "@recipe-repo/domain";
 import { appConfig } from "@recipe-repo/shared";
 
 function emptyIngredient() {
@@ -84,7 +85,9 @@ export default function App() {
   const [recipes, setRecipes] = useState([]);
   const [selectedRecipeId, setSelectedRecipeId] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState("manual");
   const [form, setForm] = useState(emptyForm);
+  const [pasteText, setPasteText] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -154,6 +157,16 @@ export default function App() {
   }
 
   function openDialog() {
+    setDialogMode("manual");
+    setPasteText("");
+    setForm(emptyForm());
+    setError("");
+    setIsDialogOpen(true);
+  }
+
+  function openPasteDialog() {
+    setDialogMode("paste");
+    setPasteText("");
     setForm(emptyForm());
     setError("");
     setIsDialogOpen(true);
@@ -164,6 +177,8 @@ export default function App() {
       return;
     }
 
+    setDialogMode("manual");
+    setPasteText("");
     setForm(formFromRecipe(selectedRecipe));
     setError("");
     setIsDialogOpen(true);
@@ -171,8 +186,28 @@ export default function App() {
 
   function closeDialog() {
     setIsDialogOpen(false);
+    setDialogMode("manual");
+    setPasteText("");
     setForm(emptyForm());
     setError("");
+  }
+
+  function handleParsePaste() {
+    const parsed = parseRecipeText(pasteText);
+
+    setForm({
+      id: null,
+      title: parsed.title || "",
+      ingredients:
+        parsed.ingredients.length > 0
+          ? parsed.ingredients.map((ingredient) => ({
+              quantity: ingredient.quantity,
+              name: ingredient.name
+            }))
+          : [emptyIngredient()],
+      method: parsed.method
+    });
+    setDialogMode("manual");
   }
 
   async function handleSubmit(event) {
@@ -246,6 +281,9 @@ export default function App() {
         </div>
         <button className="primary-button" onClick={openDialog} type="button">
           Add Recipe
+        </button>
+        <button className="secondary-button" onClick={openPasteDialog} type="button">
+          Add From Text
         </button>
       </header>
 
@@ -339,6 +377,57 @@ export default function App() {
               </button>
             </div>
 
+            {!form.id ? (
+              <div className="dialog-toggle">
+                <button
+                  className={dialogMode === "manual" ? "toggle-button active" : "toggle-button"}
+                  onClick={() => setDialogMode("manual")}
+                  type="button"
+                >
+                  Manual
+                </button>
+                <button
+                  className={dialogMode === "paste" ? "toggle-button active" : "toggle-button"}
+                  onClick={() => setDialogMode("paste")}
+                  type="button"
+                >
+                  Paste Text
+                </button>
+              </div>
+            ) : null}
+
+            {dialogMode === "paste" && !form.id ? (
+              <div className="dialog-form">
+                <label>
+                  Paste Recipe Text
+                  <textarea
+                    onChange={(event) => setPasteText(event.target.value)}
+                    placeholder={`Tomato Pasta
+
+Ingredients
+400 g pasta
+1 onion
+
+Method
+Boil the pasta.
+Saute the onion.`}
+                    rows="12"
+                    value={pasteText}
+                  />
+                </label>
+
+                <div className="dialog-actions">
+                  <button
+                    className="primary-button"
+                    disabled={!pasteText.trim()}
+                    onClick={handleParsePaste}
+                    type="button"
+                  >
+                    Parse Text
+                  </button>
+                </div>
+              </div>
+            ) : (
             <form className="dialog-form" onSubmit={handleSubmit}>
               <label>
                 Name
@@ -412,6 +501,7 @@ export default function App() {
                 </button>
               </div>
             </form>
+            )}
           </div>
         </div>
       ) : null}
