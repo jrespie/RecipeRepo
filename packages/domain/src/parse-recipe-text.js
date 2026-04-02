@@ -1,6 +1,46 @@
+const UNIT_TOKENS = new Set([
+  "g",
+  "kg",
+  "ml",
+  "l",
+  "tbsp",
+  "tsp",
+  "cup",
+  "cups",
+  "clove",
+  "cloves",
+  "piece",
+  "pieces",
+  "cm"
+]);
+
 function isHeading(line, headings) {
   const normalized = line.toLowerCase().replace(/[:\s]+$/g, "");
   return headings.includes(normalized);
+}
+
+function isQuantityLike(value) {
+  const trimmed = value.trim().toLowerCase();
+
+  return (
+    /^\(?\d/.test(trimmed) ||
+    /^(one|two|three|four|five|six|seven|eight|nine|ten)\b/.test(trimmed)
+  );
+}
+
+function looksLikeIngredientLine(line) {
+  const trimmed = line.replace(/^[-*•]\s*/, "").trim();
+
+  if (!trimmed) {
+    return false;
+  }
+
+  if (trimmed.includes(" - ")) {
+    const parts = trimmed.split(/\s+-\s+/);
+    return parts.length === 2 && isQuantityLike(parts[1]);
+  }
+
+  return isQuantityLike(trimmed);
 }
 
 function splitSections(lines) {
@@ -29,7 +69,7 @@ function splitSections(lines) {
       continue;
     }
 
-    if (!sections.title) {
+    if (!sections.title && currentSection === "title" && !looksLikeIngredientLine(line)) {
       sections.title = line;
       continue;
     }
@@ -44,20 +84,71 @@ function splitSections(lines) {
   return sections;
 }
 
-function parseIngredientLine(line) {
-  const trimmed = line.replace(/^[-*•]\s*/, "").trim();
-  const match = trimmed.match(/^(\d+(?:[\/.]\d+)?(?:\s+\d+\/\d+)?.*?)\s+(.+)$/);
+function parseTrailingQuantity(line) {
+  const match = line.match(/^(.*?)(?:\s+-\s+)(.+)$/);
 
-  if (!match) {
-    return {
-      quantity: "",
-      name: trimmed
-    };
+  if (!match || !isQuantityLike(match[2])) {
+    return null;
   }
 
   return {
-    quantity: match[1].trim(),
-    name: match[2].trim()
+    quantity: match[2].trim(),
+    name: match[1].trim()
+  };
+}
+
+function parseLeadingQuantity(line) {
+  const trimmed = line.replace(/^[-*•]\s*/, "").trim();
+  const tokens = trimmed.split(/\s+/).filter(Boolean);
+
+  if (tokens.length === 0 || !isQuantityLike(tokens[0])) {
+    return null;
+  }
+
+  const quantityTokens = [tokens[0]];
+  let index = 1;
+
+  while (index < tokens.length) {
+    const token = tokens[index];
+    const normalized = token.toLowerCase().replace(/[),.]+$/g, "");
+
+    if (
+      UNIT_TOKENS.has(normalized) ||
+      /^\([^)]*\)$/.test(token) ||
+      /^\d+[a-z]+$/i.test(token) ||
+      /^\d+\/\d+$/.test(token)
+    ) {
+      quantityTokens.push(token);
+      index += 1;
+      continue;
+    }
+
+    break;
+  }
+
+  return {
+    quantity: quantityTokens.join(" ").trim(),
+    name: tokens.slice(index).join(" ").trim()
+  };
+}
+
+function parseIngredientLine(line) {
+  const trimmed = line.replace(/^[-*•]\s*/, "").trim();
+  const trailingQuantity = parseTrailingQuantity(trimmed);
+
+  if (trailingQuantity) {
+    return trailingQuantity;
+  }
+
+  const leadingQuantity = parseLeadingQuantity(trimmed);
+
+  if (leadingQuantity) {
+    return leadingQuantity;
+  }
+
+  return {
+    quantity: "",
+    name: trimmed
   };
 }
 
@@ -68,21 +159,13 @@ export function parseRecipeText(input) {
 
   const sections = splitSections(lines);
 
+  if (!sections.title && sections.ingredients.length > 0) {
+    sections.title = "";
+  }
+
   const ingredients = sections.ingredients
     .map(parseIngredientLine)
     .filter((ingredient) => ingredient.quantity || ingredient.name);
-
-  let methodLines = sections.method;
-
-  if (methodLines.length === 0 && sections.ingredients.length > 0) {
-    const firstNonIngredientIndex = lines.findIndex((line) =>
-      isHeading(line.trim(), ["method", "instructions", "directions"])
-    );
-
-    if (firstNonIngredientIndex === -1) {
-      methodLines = [];
-    }
-  }
 
   if (sections.ingredients.length === 0 && sections.method.length === 0) {
     const remainingLines = lines
@@ -99,6 +182,6 @@ export function parseRecipeText(input) {
   return {
     title: sections.title,
     ingredients,
-    method: methodLines.join("\n")
+    method: sections.method.join("\n")
   };
 }
