@@ -3,6 +3,8 @@ const UNIT_TOKENS = new Set([
   "kg",
   "ml",
   "l",
+  "litre",
+  "litres",
   "tbsp",
   "tsp",
   "cup",
@@ -107,10 +109,25 @@ function parseLeadingQuantity(line) {
 
   const quantityTokens = [tokens[0]];
   let index = 1;
+  let allowQuantityToken = false;
 
   while (index < tokens.length) {
     const token = tokens[index];
     const normalized = token.toLowerCase().replace(/[),.]+$/g, "");
+
+    if (token === "+") {
+      quantityTokens.push(token);
+      allowQuantityToken = true;
+      index += 1;
+      continue;
+    }
+
+    if (allowQuantityToken && isQuantityLike(token)) {
+      quantityTokens.push(token);
+      allowQuantityToken = false;
+      index += 1;
+      continue;
+    }
 
     if (
       UNIT_TOKENS.has(normalized) ||
@@ -132,7 +149,7 @@ function parseLeadingQuantity(line) {
   };
 }
 
-function parseIngredientLine(line) {
+export function parseIngredientText(line) {
   const trimmed = line.replace(/^[-*•]\s*/, "").trim();
   const trailingQuantity = parseTrailingQuantity(trimmed);
 
@@ -164,7 +181,7 @@ export function parseRecipeText(input) {
   }
 
   const ingredients = sections.ingredients
-    .map(parseIngredientLine)
+    .map(parseIngredientText)
     .filter((ingredient) => ingredient.quantity || ingredient.name);
 
   if (sections.ingredients.length === 0 && sections.method.length === 0) {
@@ -174,7 +191,7 @@ export function parseRecipeText(input) {
 
     return {
       title: sections.title,
-      ingredients: remainingLines.map(parseIngredientLine),
+      ingredients: remainingLines.map(parseIngredientText),
       method: ""
     };
   }

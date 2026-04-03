@@ -1,4 +1,4 @@
-import { parseRecipeText } from "@recipe-repo/domain";
+import { parseIngredientText, parseRecipeText } from "@recipe-repo/domain";
 
 function decodeHtmlEntities(value) {
   return value
@@ -47,6 +47,41 @@ function normaliseInstruction(value) {
   }
 
   return "";
+}
+
+function isLikelyIngredientSectionHeading(line) {
+  const trimmed = line.trim();
+
+  if (!trimmed) {
+    return false;
+  }
+
+  if (/\d/.test(trimmed)) {
+    return false;
+  }
+
+  return /^(?:[A-Z][a-z]+)(?:\s+[A-Z][a-z]+){0,2}$/.test(trimmed);
+}
+
+function splitInstructionBlob(text, sectionHeadings) {
+  let working = text.trim();
+
+  for (const heading of sectionHeadings) {
+    const escapedHeading = heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const pattern = new RegExp(`\\b${escapedHeading}\\b\\s+`, "g");
+    working = working.replace(pattern, "");
+  }
+
+  working = working.replace(
+    /\s+(Add|Set|Heat|Strain|Serve|Enjoy|Combine|Reduce|Mix|Whisk|Stir|Cook|Simmer|Place|Bring|Keep|Carefully|Divide|Sprinkle|Toss|Fry)\b/g,
+    "\n$1"
+  );
+
+  return working
+    .split(/\n|(?<=[.!?])\s+/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join("\n");
 }
 
 function findRecipeObject(input) {
@@ -104,19 +139,27 @@ export function extractRecipeFromHtml(html, pageUrl) {
         continue;
       }
 
-      const ingredients = toArray(recipe.recipeIngredient).map((line) => ({
-        quantity: "",
-        name: typeof line === "string" ? line.trim() : ""
-      })).filter((item) => item.name);
+      const rawIngredientLines = toArray(recipe.recipeIngredient)
+        .map((line) => (typeof line === "string" ? line.trim() : ""))
+        .filter(Boolean);
 
-      const method = toArray(recipe.recipeInstructions)
+      const ingredientSectionHeadings = rawIngredientLines.filter(isLikelyIngredientSectionHeading);
+
+      const ingredients = rawIngredientLines
+        .filter((line) => !isLikelyIngredientSectionHeading(line))
+        .map(parseIngredientText)
+        .filter((item) => item.name);
+
+      const rawMethod = toArray(recipe.recipeInstructions)
         .map(normaliseInstruction)
         .filter(Boolean)
         .join("\n");
 
+      const method = splitInstructionBlob(rawMethod, ingredientSectionHeadings);
+
       const originalText = [
         recipe.name?.trim() || "",
-        ingredients.length > 0 ? `Ingredients\n${ingredients.map((item) => item.name).join("\n")}` : "",
+        rawIngredientLines.length > 0 ? `Ingredients\n${rawIngredientLines.join("\n")}` : "",
         method ? `Method\n${method}` : ""
       ].filter(Boolean).join("\n\n");
 

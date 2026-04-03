@@ -1,5 +1,5 @@
 import { convertToMetric } from "./metric.js";
-import { parseRecipeText } from "./parse-recipe-text.js";
+import { parseIngredientText, parseRecipeText } from "./parse-recipe-text.js";
 
 export const recipeTags = [
   "quick dinners",
@@ -48,4 +48,5 @@ export function normaliseIngredientInput({ quantity, unit, ingredient }) {
 }
 
 export { convertToMetric };
+export { parseIngredientText };
 export { parseRecipeText };
