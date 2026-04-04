@@ -1,5 +1,6 @@
 import Fastify from "fastify";
 import { appConfig } from "@recipe-repo/shared";
+import { importRecipeFromPhoto } from "./importRecipePhoto.js";
 import { importRecipeFromUrl } from "./importRecipeUrl.js";
 import {
   createRecipe,
@@ -11,7 +12,8 @@ import {
 } from "@recipe-repo/db";
 
 const server = Fastify({
-  logger: true
+  logger: true,
+  bodyLimit: 10 * 1024 * 1024
 });
 
 const apiPort = Number(process.env.API_PORT || 4000);
@@ -62,6 +64,10 @@ server.post("/api/recipes", async (request, reply) => {
 
 server.post("/api/recipes/import-url", async (request) => {
   return importRecipeFromUrl(request.body.url);
+});
+
+server.post("/api/recipes/import-photo", async (request) => {
+  return importRecipeFromPhoto(request.body.imageBase64);
 });
 
 server.put("/api/recipes/:id", async (request, reply) => {

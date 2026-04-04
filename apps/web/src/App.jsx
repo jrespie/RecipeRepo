@@ -99,6 +99,7 @@ export default function App() {
   const [form, setForm] = useState(emptyForm);
   const [pasteText, setPasteText] = useState("");
   const [urlText, setUrlText] = useState("");
+  const [photoDataUrl, setPhotoDataUrl] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -172,6 +173,7 @@ export default function App() {
     setDialogMode("manual");
     setPasteText("");
     setUrlText("");
+    setPhotoDataUrl("");
     setForm(emptyForm());
     setError("");
     setIsDialogOpen(true);
@@ -181,6 +183,7 @@ export default function App() {
     setDialogMode("paste");
     setPasteText("");
     setUrlText("");
+    setPhotoDataUrl("");
     setForm(emptyForm());
     setError("");
     setIsDialogOpen(true);
@@ -190,6 +193,17 @@ export default function App() {
     setDialogMode("url");
     setPasteText("");
     setUrlText("");
+    setPhotoDataUrl("");
+    setForm(emptyForm());
+    setError("");
+    setIsDialogOpen(true);
+  }
+
+  function openPhotoDialog() {
+    setDialogMode("photo");
+    setPasteText("");
+    setUrlText("");
+    setPhotoDataUrl("");
     setForm(emptyForm());
     setError("");
     setIsDialogOpen(true);
@@ -203,6 +217,7 @@ export default function App() {
     setDialogMode("manual");
     setPasteText("");
     setUrlText("");
+    setPhotoDataUrl("");
     setForm(formFromRecipe(selectedRecipe));
     setError("");
     setIsDialogOpen(true);
@@ -213,8 +228,26 @@ export default function App() {
     setDialogMode("manual");
     setPasteText("");
     setUrlText("");
+    setPhotoDataUrl("");
     setForm(emptyForm());
     setError("");
+  }
+
+  async function handlePhotoFileChange(event) {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      setPhotoDataUrl("");
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      setPhotoDataUrl(String(reader.result || ""));
+    };
+
+    reader.readAsDataURL(file);
   }
 
   function handleParsePaste() {
@@ -282,6 +315,54 @@ export default function App() {
       setDialogMode("manual");
     } catch (nextError) {
       setError(nextError.message || "Unable to import recipe URL.");
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  async function handleImportPhoto() {
+    setImporting(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/recipes/import-photo", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          imageBase64: photoDataUrl
+        })
+      });
+
+      if (!response.ok) {
+        const failure = await response.json().catch(() => ({
+          message: "Unable to import recipe photo."
+        }));
+        throw new Error(failure.message || "Unable to import recipe photo.");
+      }
+
+      const imported = await response.json();
+
+      setForm({
+        id: null,
+        title: imported.title || "",
+        ingredients:
+          imported.ingredients.length > 0
+            ? imported.ingredients.map((ingredient) => ({
+                quantity: ingredient.quantity,
+                name: ingredient.name
+              }))
+            : [emptyIngredient()],
+        method: imported.method || "",
+        sourceType: imported.sourceType || "photo-import",
+        sourceName: imported.sourceName || "Photo import",
+        sourceUrl: "",
+        originalText: imported.originalText || ""
+      });
+      setDialogMode("manual");
+    } catch (nextError) {
+      setError(nextError.message || "Unable to import recipe photo.");
     } finally {
       setImporting(false);
     }
@@ -364,6 +445,9 @@ export default function App() {
         </button>
         <button className="secondary-button" onClick={openUrlDialog} type="button">
           Add From URL
+        </button>
+        <button className="secondary-button" onClick={openPhotoDialog} type="button">
+          Add From Photo
         </button>
       </header>
 
@@ -480,6 +564,13 @@ export default function App() {
                 >
                   URL
                 </button>
+                <button
+                  className={dialogMode === "photo" ? "toggle-button active" : "toggle-button"}
+                  onClick={() => setDialogMode("photo")}
+                  type="button"
+                >
+                  Photo
+                </button>
               </div>
             ) : null}
 
@@ -534,6 +625,32 @@ Saute the onion.`}
                     type="button"
                   >
                     {importing ? "Importing…" : "Import URL"}
+                  </button>
+                </div>
+              </div>
+            ) : dialogMode === "photo" && !form.id ? (
+              <div className="dialog-form">
+                <label>
+                  Recipe Photo
+                  <input
+                    accept="image/*"
+                    onChange={handlePhotoFileChange}
+                    type="file"
+                  />
+                </label>
+
+                {photoDataUrl ? (
+                  <img alt="Recipe upload preview" className="photo-preview" src={photoDataUrl} />
+                ) : null}
+
+                <div className="dialog-actions">
+                  <button
+                    className="primary-button"
+                    disabled={!photoDataUrl || importing}
+                    onClick={handleImportPhoto}
+                    type="button"
+                  >
+                    {importing ? "Reading Photo…" : "Import Photo"}
                   </button>
                 </div>
               </div>
